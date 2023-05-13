@@ -1,5 +1,7 @@
-﻿using GepetoUtilidades.Service.Contract;
+﻿using GepetoUtilidades.Service.Config;
+using GepetoUtilidades.Service.Contract;
 using GepetoUtilidades.Service.Interfaces;
+using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using System.Text;
 
@@ -7,21 +9,34 @@ namespace GepetoUtilidades.Service.Services
 {
     public class ConsultaGptService : IConsultaGptService
     {
+        private readonly HttpClient _httpClient;
+        private readonly OpenAiApiSettings _apiSettings;
+
+        public ConsultaGptService(HttpClient httpClient, IOptions<OpenAiApiSettings> apiSettings)
+        {
+            _httpClient = httpClient;
+            _apiSettings = apiSettings.Value;
+        }
         public async Task<string> ObterRespostaChatGptTexto()
         {
-            var mensagens = new List<MessageDto>() { new MessageDto() {Role = "user", Content = " olá" } };
-            HttpClient httpClient = new HttpClient();
-            httpClient.DefaultRequestHeaders.Add("authorization", "Bearer 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");
-            var mensagemJson = JsonConvert.SerializeObject(new { model = "gpt-3.5-turbo", messages = mensagens });
+            var mensagens = new List<MessageDto>() { new MessageDto() { Role = "user", Content = " olá" } };
+            var mensagemJson = PrepararSolicitacao(mensagens);
+            var respostaJson = await EnviarSolicitacao(mensagemJson);
+            var resposta = JsonConvert.DeserializeObject<ChatGptResponseDto>(respostaJson);
+            return resposta.Choices[0].Message.Content;
+        }
 
-            var respostaJson = await httpClient.PostAsync("https://api.openai.com/v1/chat/completions", new StringContent(mensagemJson, Encoding.UTF8, "application/json"));
+        private string PrepararSolicitacao(List<MessageDto> mensagens)
+        {
+            return JsonConvert.SerializeObject(new { model = "gpt-3.5-turbo", messages = mensagens });
+        }
 
-            var resposta = await respostaJson.Content.ReadAsStringAsync();
+        private async Task<string> EnviarSolicitacao(string mensagemJson)
+        {
+            _httpClient.DefaultRequestHeaders.Add("authorization", $"Bearer {_apiSettings.ApiKey}");
+            var respostaJson = await _httpClient.PostAsync(_apiSettings.ApiUrl, new StringContent(mensagemJson, Encoding.UTF8, "application/json"));
 
-
-            var respostana = JsonConvert.DeserializeObject<ChatGptResponseDto>(resposta);
-
-            return respostana.Choices[0].Message.Content;
+            return await respostaJson.Content.ReadAsStringAsync();
         }
     }
 }

@@ -17,7 +17,6 @@ namespace GepetoUtilidades.Controllers
         [HttpGet(Name = "ObterResposta")]
         public async Task<string> ConsultarChatBot()
         {
-
             return await _consultaGptService.ObterRespostaChatGptTexto();
         }
     }
