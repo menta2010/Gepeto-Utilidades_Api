@@ -185,3 +185,4 @@ log/
 *.swp.*
 # Ignorar appsettings.json
 appsettings.json
+appsettings.Development.json
