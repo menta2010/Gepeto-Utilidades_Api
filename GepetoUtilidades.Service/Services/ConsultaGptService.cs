@@ -2,6 +2,7 @@
 using GepetoUtilidades.Service.Contract;
 using GepetoUtilidades.Service.Interfaces;
 using Microsoft.Extensions.Options;
+using NAudio.Wave;
 using Newtonsoft.Json;
 using System.Text;
 
@@ -19,11 +20,25 @@ namespace GepetoUtilidades.Service.Services
         }
         public async Task<string> ObterRespostaChatGptTexto()
         {
+            ConverterAudioTexto();
             var mensagens = new List<MessageDto>() { new MessageDto() { Role = "user", Content = " olá" } };
             var mensagemJson = PrepararSolicitacao(mensagens);
             var respostaJson = await EnviarSolicitacao(mensagemJson);
             var resposta = JsonConvert.DeserializeObject<ChatGptResponseDto>(respostaJson);
             return resposta.Choices[0].Message.Content;
+        }
+
+        private void ConverterAudioTexto()
+        {
+            ConverterParaWav("C:\\Users\\NatalinoEstevesRodri\\Documents\\teste.mp3", "C:\\Users\\NatalinoEstevesRodri\\Documents\\SaidaAudio");
+        }
+        private void ConverterParaWav(string inputPath, string outputPath)
+        {
+            using (var reader = new MediaFoundationReader(inputPath))
+            {
+                WaveFileWriter.CreateWaveFile(outputPath, reader);
+            }
+
         }
 
         private string PrepararSolicitacao(List<MessageDto> mensagens)
